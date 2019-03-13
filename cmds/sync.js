@@ -88,8 +88,6 @@ module.exports = async (direction, args) => {
     return new Promise((resolve)=>{
       // Execute the command
       rsync.execute(function(error, code, cmd) {
-          // we're done
-          // console.log("RSYNC DONE!\n", error, "\n---\n", code, "\n---\n", cmd);
           console.log('synced');
           resolve();
       });
