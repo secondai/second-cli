@@ -66,10 +66,18 @@ module.exports = async (direction, args) => {
     .destination(dest);
 
 
-  // Start watching for changes to files 
+  function runSync(){
+    return new Promise((resolve)=>{
+      // Execute the command
+      rsync.execute(function(error, code, cmd) {
+          console.log('synced');
+          resolve();
+      });
+    });
+  }
 
-  // One-liner for current directory, ignores .dotfiles
   if(direction == 'local-to-remote'){
+    // Start watching for changes to files 
     console.log('Watching for file changes');
     const spinner = ora().start()
     // spinner.stop()
@@ -83,15 +91,8 @@ module.exports = async (direction, args) => {
     });
   }
 
-
-  function runSync(){
-    return new Promise((resolve)=>{
-      // Execute the command
-      rsync.execute(function(error, code, cmd) {
-          console.log('synced');
-          resolve();
-      });
-    });
+  if(direction == 'remote-to-local'){
+    runSync();
   }
 
 }
