@@ -20,14 +20,19 @@ module.exports = () => {
 
   switch (cmd) {
 
-    case 'sync':
+    case 'push':
       require('./cmds/sync')('local-to-remote', args)
       break
 
     case 'download':
     case 'dl':
+    case 'pull':
       require('./cmds/sync')('remote-to-local', args)
       break
+
+    case 'sync':
+      error(`"sync" has been replaced with the appropriate push/pull (correct "sync" is a todo)`, true)
+      break;
 
     case 'version':
       require('./cmds/version')(args)

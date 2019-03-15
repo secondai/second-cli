@@ -2,15 +2,16 @@ const menus = {
   main: `
     second-cli [command] <options>
 
-    sync .............. local to remote 
-    dl ........... remote to local
+    push ............... local to remote (overwriting) 
+    pull ............... remote to local (overwriting) 
     version ............ show package version
     help ............... show help menu for a command`,
 
-  sync, dl: `
-    second-cli sync|dl node.path.here <options>
+  push, pull: `
+    second-cli push|pull <options>
 
-    --host ..... i.e.: root@ipaddress`,
+    --node, -n ........... i.e.: app.second.sample_app,
+    --host ............... i.e.: root@ipaddress`,
 
 }
 

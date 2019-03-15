@@ -3,50 +3,101 @@ const Rsync = require('rsync');
 const path = require('path');
 const chokidar = require('chokidar');
 const { prompt } = require('enquirer');
+const fs = require('fs-extra');
+const _ = require('lodash');
+const error = require('../utils/error');
+
+const DEFAULT_REMOTE_PATH = '/usr/src/attached-volume/';
 
 module.exports = async (direction, args) => {
 
-  let inputNodePath = args._[1];
-  if(inputNodePath.split('/').length > 1){
-    console.error('Do not include a slash in your app node path');
+  let nodePaths = args.node || args.n;
+
+  if(!nodePaths){
+    error('Missing --node, -n like app.second.sample_app');
     return;
+  }
+
+  nodePaths = _.isArray(nodePaths) ? nodePaths:[nodePaths];
+  
+  for(let inputNodePath of nodePaths){
+    if(inputNodePath.split('/').length > 1){
+      error(`Do not include a slash in your app node path: "${inputNodePath}"`);
+      return;
+    }
   }
 
   if(!args.host){
-    console.error('Missing --host like root@ipaddress');
+    error('Missing --host like root@ipaddress');
     return;
   }
+  let host = args.host;
 
-  let cwd = process.cwd() + '/';
-  let remotePath = args.host + ':' + path.join('/usr/src/attached-volume/', inputNodePath) + '/';
-
-  let answer, src, dest;
+  // Confirm
+  let answer;
   if(direction == 'local-to-remote'){
-    src = cwd;
-    dest = remotePath;
 
     answer = await prompt({
       type: 'confirm',
       name: 'confirm',
-      message: 'This will copy from LOCAL to REMOTE, overwriting the remote directory'
+      message: `This will OVERWRITE the REMOTE using your local folders`
     });
     if(!answer || !answer.confirm){
       return false;
     }
 
   } else {
-    src = remotePath;
-    dest = cwd;
+    // remote-to-local 
 
     answer = await prompt({
       type: 'confirm',
       name: 'confirm',
-      message: 'This will copy from REMOTE to LOCAL, overwriting your local directories contents'
+      message: `This will fetch from remote and OVERWRITE your LOCAL folders in this directory (./app.second.xyz/, etc)`
     });
     if(!answer || !answer.confirm){
       return false;
     }
 
+  }
+
+
+  console.log('Creating watchers');
+
+  // create watchers
+  for(let inputNodePath of nodePaths){
+    startSyncForPath({
+      inputNodePath,
+      host,
+      direction
+    });
+
+  }
+
+
+}
+
+async function startSyncForPath(opts){
+
+  let {
+    inputNodePath,
+    host,
+    direction
+  } = opts;
+
+  let cwd = process.cwd() + '/' + inputNodePath + '/';
+  let remotePath = host + ':' + path.join(DEFAULT_REMOTE_PATH, inputNodePath) + '/';
+
+  let src, dest;
+  if(direction == 'local-to-remote'){
+    src = cwd;
+    dest = remotePath;
+
+    // ensure local directory exists 
+    await fs.ensureDir(cwd);
+  } else {
+    // remote-to-local 
+    src = remotePath;
+    dest = cwd;
   }
 
   // console.log('Source:', src);
@@ -55,7 +106,7 @@ module.exports = async (direction, args) => {
   // Build the command
   var rsync = new Rsync()
     // .shell('ssh -p 2222')
-    .shell('ssh -p 2222')
+    .shell('ssh -p 2222 -o "StrictHostKeyChecking=no"')
     .flags('v')
     .recursive()
     .compress()
@@ -70,8 +121,8 @@ module.exports = async (direction, args) => {
     return new Promise((resolve)=>{
       // Execute the command
       rsync.execute(function(error, code, cmd) {
-          console.log('synced');
-          resolve();
+        console.log('Synced ', inputNodePath ,' Error:', error, 'ExitCode:', code); //, cmd);
+        resolve();
       });
     });
   }
@@ -81,14 +132,36 @@ module.exports = async (direction, args) => {
     console.log('Watching for file changes');
     const spinner = ora().start()
     // spinner.stop()
+
+    let toRun = true;
+
     chokidar.watch('.', {
       ignoreInitial: true,
-      ignored: ['node_modules'],
-      cwd: process.cwd()
+      ignored: ['node_modules', 'node_modules/**/*'],
+      cwd: cwd
     }).on('all', (event, path) => {
-      console.log(event, path);
-      runSync();
+      // console.log(event, path);
+      // runSync();
+      toRun = true;
     });
+
+    // // Run once initially (now handled by toRun) 
+    // runSync();
+
+    // check for further runs 
+    function checkToRun(){
+      if(toRun){
+        toRun = false;
+        runSync()
+        .then(()=>{
+          setTimeout(checkToRun, 1000);
+        });
+      } else {
+        setTimeout(checkToRun,1000);
+      }
+    }
+    checkToRun();
+
   }
 
   if(direction == 'remote-to-local'){
