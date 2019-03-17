@@ -21,17 +21,17 @@ module.exports = () => {
   switch (cmd) {
 
     case 'push':
-      require('./cmds/sync')('local-to-remote', args)
+      require('./cmds/pushpull')('local-to-remote', args)
       break
 
     case 'download':
     case 'dl':
     case 'pull':
-      require('./cmds/sync')('remote-to-local', args)
+      require('./cmds/pushpull')('remote-to-local', args)
       break
 
     case 'sync':
-      error(`"sync" has been replaced with the appropriate push/pull (correct "sync" is a todo)`, true)
+      require('./cmds/sync')(args)
       break;
 
     case 'version':

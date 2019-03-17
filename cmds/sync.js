@@ -4,12 +4,13 @@ const path = require('path');
 const chokidar = require('chokidar');
 const { prompt } = require('enquirer');
 const fs = require('fs-extra');
+const exec = require('child_process').exec;
 const _ = require('lodash');
 const error = require('../utils/error');
 
-const DEFAULT_REMOTE_PATH = '/usr/src/attached-volume/';
+const DEFAULT_REMOTE_PATH = '/usr/src/attached-volume/old/'; 
 
-module.exports = async (direction, args) => {
+module.exports = async (args) => {
 
   let nodePaths = args.node || args.n;
 
@@ -33,31 +34,17 @@ module.exports = async (direction, args) => {
   }
   let host = args.host;
 
+  console.log('Default remote path is:', DEFAULT_REMOTE_PATH);
+
   // Confirm
   let answer;
-  if(direction == 'local-to-remote'){
-
-    answer = await prompt({
-      type: 'confirm',
-      name: 'confirm',
-      message: `This will OVERWRITE the REMOTE using your local folders`
-    });
-    if(!answer || !answer.confirm){
-      return false;
-    }
-
-  } else {
-    // remote-to-local 
-
-    answer = await prompt({
-      type: 'confirm',
-      name: 'confirm',
-      message: `This will fetch from remote and OVERWRITE your LOCAL folders in this directory (./app.second.xyz/, etc)`
-    });
-    if(!answer || !answer.confirm){
-      return false;
-    }
-
+  answer = await prompt({
+    type: 'confirm',
+    name: 'confirm',
+    message: `Sync using unison`
+  });
+  if(!answer || !answer.confirm){
+    return false;
   }
 
 
@@ -67,8 +54,7 @@ module.exports = async (direction, args) => {
   for(let inputNodePath of nodePaths){
     startSyncForPath({
       inputNodePath,
-      host,
-      direction
+      host
     });
 
   }
@@ -80,92 +66,74 @@ async function startSyncForPath(opts){
 
   let {
     inputNodePath,
-    host,
-    direction
+    host
   } = opts;
 
-  let cwd = process.cwd() + '/' + inputNodePath + '/';
-  let remotePath = host + ':' + path.join(DEFAULT_REMOTE_PATH, inputNodePath) + '/';
-
-  let src, dest;
-  if(direction == 'local-to-remote'){
-    src = cwd;
-    dest = remotePath;
-
-    // ensure local directory exists 
-    await fs.ensureDir(cwd);
-  } else {
-    // remote-to-local 
-    src = remotePath;
-    dest = cwd;
+  if(inputNodePath == 'all'){
+    inputNodePath = null;
   }
 
-  // console.log('Source:', src);
-  // console.log('Destination:', dest);
+  let cwd = inputNodePath ? path.join(process.cwd(), inputNodePath) : process.cwd();
+  let remotePath = (inputNodePath ? (path.join(DEFAULT_REMOTE_PATH, inputNodePath) + '/') : DEFAULT_REMOTE_PATH);
 
-  // Build the command
-  var rsync = new Rsync()
-    // .shell('ssh -p 2222')
-    .shell('ssh -p 2222 -o "StrictHostKeyChecking=no"')
-    .flags('v')
-    .recursive()
-    .compress()
-    .progress()
-    .delete()
-    .exclude(['node_modules','.DS_Store'])
-    .source(src)
-    .destination(dest);
+  // UNISON (bidirectional, when using sync) 
+  // - fails with "-o "StrictHostKeyChecking=no"" in the sshargs??
+  let command = `unison ${cwd} ssh://${host}/${remotePath} -sshargs '-p 2222' -ignore 'Name node_modules' -ignore 'Name .DS_Store' -auto -batch -prefer ssh://${host}/${remotePath}`;
 
+  console.log('Sync Command:', command);
+  // return false;
 
-  function runSync(){
+  function runUnisonSync(){
     return new Promise((resolve)=>{
-      // Execute the command
-      rsync.execute(function(error, code, cmd) {
-        console.log('Synced ', inputNodePath ,' Error:', error, 'ExitCode:', code); //, cmd);
+      // // Execute the command
+      // rsync.execute(function(error, code, cmd) {
+      //   console.log('Synced ', inputNodePath ,' Error:', error, 'ExitCode:', code); //, cmd);
+      //   resolve();
+      // });
+      exec(command, (error, stdout, stderr)=>{
+        console.log('exec output', error, stdout, stderr);
         resolve();
+      })
+    });
+  }
+
+  let toRun = true; // runs once at first
+  // check for further runs 
+  function checkToRunUnison(){
+    if(toRun){
+      toRun = false;
+      runUnisonSync()
+      .then(()=>{
+        setTimeout(checkToRunUnison, 1000);
       });
-    });
-  }
-
-  if(direction == 'local-to-remote'){
-    // Start watching for changes to files 
-    console.log('Watching for file changes');
-    const spinner = ora().start()
-    // spinner.stop()
-
-    let toRun = true;
-
-    chokidar.watch('.', {
-      ignoreInitial: true,
-      ignored: ['node_modules', 'node_modules/**/*'],
-      cwd: cwd
-    }).on('all', (event, path) => {
-      // console.log(event, path);
-      // runSync();
-      toRun = true;
-    });
-
-    // // Run once initially (now handled by toRun) 
-    // runSync();
-
-    // check for further runs 
-    function checkToRun(){
-      if(toRun){
-        toRun = false;
-        runSync()
-        .then(()=>{
-          setTimeout(checkToRun, 1000);
-        });
-      } else {
-        setTimeout(checkToRun,1000);
-      }
+    } else {
+      setTimeout(checkToRunUnison,1000);
     }
-    checkToRun();
-
   }
 
-  if(direction == 'remote-to-local'){
-    runSync();
-  }
+  let secondsBetweenRemoteChecks = 10;
+  // watch for local changes 
+
+  console.log('Watching for file changes');
+  const spinner = ora().start()
+  // spinner.stop()
+
+  chokidar.watch('.', {
+    ignoreInitial: true,
+    ignored: ['node_modules', 'node_modules/**/*'],
+    cwd: cwd
+  }).on('all', (event, path) => {
+    // console.log(event, path);
+    // runSync();
+    toRun = true;
+  });
+  checkToRunUnison();
+
+
+  // check for remote changes every X (10) seconds 
+  setInterval(()=>{
+    toRun = true;
+  }, secondsBetweenRemoteChecks * 1000);
+
 
 }
