@@ -15,7 +15,7 @@ const menus = {
     --host ............... i.e.: root@ipaddress`,
 
 
-  push, pull: `
+  'push, pull': `
     second-cli push|pull <options>
 
     --node, -n ........... i.e.: app.second.sample_app,

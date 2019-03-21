@@ -8,7 +8,7 @@ const exec = require('child_process').exec;
 const _ = require('lodash');
 const error = require('../utils/error');
 
-const DEFAULT_REMOTE_PATH = '/usr/src/attached-volume/old/'; 
+const DEFAULT_REMOTE_PATH = '/usr/src/attached-volume/'; 
 
 module.exports = async (args) => {
 

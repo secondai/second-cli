@@ -20,6 +20,10 @@ module.exports = () => {
 
   switch (cmd) {
 
+    case 'build-frontend':
+      require('./cmds/build-frontend')(args)
+      break
+
     case 'push':
       require('./cmds/pushpull')('local-to-remote', args)
       break

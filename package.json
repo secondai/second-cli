@@ -23,6 +23,7 @@
     "chokidar": "2.1.2",
     "enquirer": "2.3.0",
     "fs-extra": "7.0.1",
+    "handlebars-helpers": "0.10.0",
     "lodash": "4.17.11",
     "minimist": "^1.2.0",
     "ora": "^2.0.0",
