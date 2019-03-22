@@ -115,23 +115,31 @@ async function startSyncForPath(opts){
   // watch for local changes 
 
   console.log('Watching for file changes');
-  const spinner = ora().start()
+  // const spinner = ora().start()
   // spinner.stop()
 
   chokidar.watch('.', {
     ignoreInitial: true,
-    ignored: ['node_modules', 'node_modules/**/*'],
+    // ignored: ['node_modules', 'node_modules/**/*'],
+    persistent: true,
+    usePolling: true,
+    interval: 5000, 
+    binaryInterval: 5300, // ?
+    depth: 10,
+    followSymlinks: false,
     cwd: cwd
   }).on('all', (event, path) => {
     // console.log(event, path);
     // runSync();
     toRun = true;
+    // console.log('check1');
   });
   checkToRunUnison();
 
 
   // check for remote changes every X (10) seconds 
   setInterval(()=>{
+    // console.log('check2');
     toRun = true;
   }, secondsBetweenRemoteChecks * 1000);
 
