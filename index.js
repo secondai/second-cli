@@ -24,6 +24,10 @@ module.exports = () => {
       require('./cmds/build-frontend')(args)
       break
 
+    case 'create-frontend':
+      require('./cmds/build-frontend')(args)
+      break
+
     case 'push':
       require('./cmds/pushpull')('local-to-remote', args)
       break

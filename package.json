@@ -1,6 +1,6 @@
 {
   "name": "second-cli",
-  "version": "1.0.5",
+  "version": "1.0.7",
   "description": "Second CLI",
   "license": "MIT",
   "homepage": "https://github.com/secondai/second-cli#readme",
@@ -21,6 +21,9 @@
   "dependencies": {
     "axios": "^0.18.0",
     "chokidar": "2.1.2",
+    "depcheck": "0.7.2",
+    "dependency-check": "3.3.0",
+    "detective-es6": "2.1.0",
     "enquirer": "2.3.0",
     "fs-extra": "7.0.1",
     "handlebars-helpers": "0.10.0",
