@@ -2,7 +2,7 @@ const menus = {
   main: `
     second-cli [command] <options>
 
-    build-frontend .........finds outline.json in directory and builds frontend accordingly 
+    build-frontend .........builds source from outline, installs dependencies, etc.
     create-frontend ........creates a sample frontend app (like create-react-app, then configures some variables) 
     create-component .......just run 'nwb' 
 
@@ -16,6 +16,10 @@ const menus = {
     second-cli build-frontend <path> <options>
 
     -y ..................... enter "y" for each input request (add missing, upgrade, build from source) 
+    --skip .................. skip all build requests (unless specified) 
+
+    --skip-outline ........... skips building source from outline 
+    --auto-outline ..........doesnt ask before building outline 
 
     --skip-missing ........... skips missing components 
     --auto-add-missing ..........autoinstalls via 'yarn add second-component-xyz'
