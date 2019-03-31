@@ -78,7 +78,7 @@ async function startSyncForPath(opts){
 
   // UNISON (bidirectional, when using sync) 
   // - fails with "-o "StrictHostKeyChecking=no"" in the sshargs??
-  let command = `unison ${cwd} ssh://${host}/${remotePath} -sshargs '-p 2222' -ignore 'Name node_modules' -ignore 'Name .DS_Store' -auto -batch -prefer ssh://${host}/${remotePath}`;
+  let command = `unison ${cwd} ssh://${host}/${remotePath} -sshargs '-p 2222' -ignorelocks -ignore 'Name node_modules' -ignore 'Name .DS_Store' -auto -batch -prefer ssh://${host}/${remotePath}`;
 
   console.log('Sync Command:', command);
   // return false;
