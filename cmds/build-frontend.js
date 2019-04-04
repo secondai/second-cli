@@ -186,7 +186,7 @@ module.exports = async (args) => {
       }
       fs.emptyDirSync(outputDir);
       console.log('Emptied directory');
-      let firstFile = processOutlineLevel(outline);
+      let firstFile = processOutlineLevel(outline.components);
       fs.writeFileSync(path.join(outputDir, '0_index.js'), `module.exports = require('./${firstFile}').default;`,'utf8');
       // console.log('firstFile:', firstFile);
       console.log('Finished src update from outline');
