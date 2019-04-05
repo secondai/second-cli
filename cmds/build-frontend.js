@@ -277,12 +277,17 @@ module.exports = async (args) => {
         var resolveExit;
         var onExit = new Promise(r=>{resolveExit=r});
         child.on('exit', function (code, signal) {
-          console.log(`CHILD process exited with ` +
+          console.log(`second-cli command process exited with ` +
                       `code ${code} and signal ${signal}`);
+          if(code != 0){ 
+            return process.exit(1);
+          }
           resolveExit();
         });
         await onExit;
       }
+    } else {
+      console.log('Skipping installing missing packages');
     }
     
   }
@@ -313,8 +318,11 @@ module.exports = async (args) => {
       var resolveExit;
       var onExit = new Promise(r=>{resolveExit=r});
       child.on('exit', function (code, signal) {
-        console.log(`CHILD process exited with ` +
+        console.log(`second-cli command process exited with ` +
                     `code ${code} and signal ${signal}`);
+        if(code != 0){ 
+          return process.exit(1);
+        }
         resolveExit();
       });
       await onExit;
@@ -355,8 +363,11 @@ module.exports = async (args) => {
       var resolveExit;
       var onExit = new Promise(r=>{resolveExit=r});
       child.on('exit', function (code, signal) {
-        console.log(`CHILD process exited with ` +
+        console.log(`second-cli command process exited with ` +
                     `code ${code} and signal ${signal}`);
+        if(code != 0){ 
+          return process.exit(1);
+        }
         resolveExit();
       });
       await onExit;
